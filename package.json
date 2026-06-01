@@ -1,0 +1,95 @@
+{
+  "name": "miniapp-jump",
+  "displayName": "Miniapp Jump",
+  "description": "Go to definitions for WeChat Mini Program JS, WXML and WXSS files.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:javascript",
+    "onLanguage:wxml",
+    "onLanguage:wxss",
+    "workspaceContains:**/*.wxml",
+    "workspaceContains:**/*.wxss",
+    "onCommand:miniappJump.rebuildIndex",
+    "onCommand:miniappJump.showDebugInfo"
+  ],
+  "main": "./out/src/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "wxml",
+        "aliases": [
+          "WXML",
+          "wxml"
+        ],
+        "extensions": [
+          ".wxml"
+        ]
+      },
+      {
+        "id": "wxss",
+        "aliases": [
+          "WXSS",
+          "wxss"
+        ],
+        "extensions": [
+          ".wxss"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "miniappJump.rebuildIndex",
+        "title": "Miniapp Jump: Rebuild Index"
+      },
+      {
+        "command": "miniappJump.showDebugInfo",
+        "title": "Miniapp Jump: Show Debug Info"
+      }
+    ],
+    "configuration": {
+      "title": "Miniapp Jump",
+      "properties": {
+        "miniappJump.enableWxmlEventJump": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable WXML event handler definition jumps."
+        },
+        "miniappJump.enableWxmlClassJump": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable WXML class to WXSS definition jumps."
+        },
+        "miniappJump.enableBehaviorJump": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable fallback jumps from page/component methods to behavior methods."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.10.7",
+    "@types/vscode": "^1.90.0",
+    "@vscode/test-electron": "^2.5.2",
+    "mocha": "^11.0.1"
+  }
+}
