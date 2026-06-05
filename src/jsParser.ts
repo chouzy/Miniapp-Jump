@@ -13,6 +13,7 @@ export interface JsFileIndex {
   identifierModules: Map<string, string>;
   namedImports: Map<string, ImportedSymbol>;
   behaviorSpecs: string[];
+  isBehaviorFile: boolean;
 }
 
 function addLocation(target: Map<string, vscode.Location[]>, name: string | undefined, location: vscode.Location): void {
@@ -217,6 +218,7 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
   const objectDeclarations = new Map<string, ts.ObjectLiteralExpression>();
   const exportSpecifiers: Array<{ local: string; exported: string; node: ts.Node }> = [];
   const behaviorSpecs: string[] = [];
+  let isBehaviorFile = false;
 
   function addLocalDeclaration(name: string | undefined, node: ts.Node): void {
     if (name) {
@@ -341,6 +343,9 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
       ['App', 'Page', 'Component', 'Behavior'].includes(node.expression.text) &&
       node.arguments.length > 0
     ) {
+      if (node.expression.text === 'Behavior') {
+        isBehaviorFile = true;
+      }
       const config = ts.isObjectLiteralExpression(node.arguments[0])
         ? node.arguments[0]
         : ts.isIdentifier(node.arguments[0])
@@ -367,6 +372,7 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
     exports: exportsMap,
     identifierModules,
     namedImports,
-    behaviorSpecs
+    behaviorSpecs,
+    isBehaviorFile
   };
 }

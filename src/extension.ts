@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 import { MiniappDefinitionProvider } from './definitionProvider';
 import { MiniappIndex } from './index';
+import { MiniappReferenceProvider } from './referenceProvider';
 
 export function activate(context: vscode.ExtensionContext): void {
   const index = new MiniappIndex();
   const provider = new MiniappDefinitionProvider(index);
+  const referenceProvider = new MiniappReferenceProvider(index);
 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(
@@ -14,6 +16,10 @@ export function activate(context: vscode.ExtensionContext): void {
         { scheme: 'file', language: 'wxss' }
       ],
       provider
+    ),
+    vscode.languages.registerReferenceProvider(
+      { scheme: 'file', language: 'javascript' },
+      referenceProvider
     ),
     vscode.commands.registerCommand('miniappJump.rebuildIndex', () => {
       index.clear();

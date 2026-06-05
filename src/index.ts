@@ -180,7 +180,7 @@ export class MiniappIndex {
     return aliases;
   }
 
-  companionUri(uri: vscode.Uri, extension: '.js' | '.wxss'): vscode.Uri {
+  companionUri(uri: vscode.Uri, extension: '.js' | '.wxss' | '.wxml'): vscode.Uri {
     const parsed = path.parse(uri.fsPath);
     return vscode.Uri.file(path.join(parsed.dir, `${parsed.name}${extension}`));
   }
