@@ -13,6 +13,7 @@ export function activate(context: vscode.ExtensionContext): void {
       [
         { scheme: 'file', language: 'javascript' },
         { scheme: 'file', language: 'wxml' },
+        { scheme: 'file', pattern: '**/*.wxml' },
         { scheme: 'file', language: 'wxss' }
       ],
       provider
@@ -33,6 +34,31 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       vscode.window.showInformationMessage((await provider.debugInfo(editor.document, editor.selection.active)).join(' '));
+    }),
+    vscode.commands.registerCommand('miniappJump.findReferences', async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showInformationMessage('Miniapp Jump: no active editor.');
+        return;
+      }
+
+      const position = editor.selection.active;
+      const references = await referenceProvider.findReferences(editor.document, position);
+      if (!references) {
+        await vscode.commands.executeCommand('editor.action.referenceSearch.trigger');
+        return;
+      }
+      if (references.length === 0) {
+        vscode.window.showInformationMessage('Miniapp Jump: no references found.');
+        return;
+      }
+
+      await vscode.commands.executeCommand(
+        'editor.action.showReferences',
+        editor.document.uri,
+        position,
+        references
+      );
     }),
     vscode.workspace.onDidChangeTextDocument((event) => index.invalidate(event.document.uri)),
     vscode.workspace.onDidSaveTextDocument((document) => index.invalidate(document.uri)),

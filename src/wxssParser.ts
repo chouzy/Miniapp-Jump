@@ -24,16 +24,58 @@ export function parseWxssFile(text: string, uri: vscode.Uri): WxssFileIndex {
     imports.push(match[1]);
   }
 
-  const classPattern = /(^|[,{]\s*)\.([_a-zA-Z-][\w-]*)/gm;
-  for (const match of text.matchAll(classPattern)) {
-    const className = match[2];
-    const startOffset = (match.index ?? 0) + match[1].length + 1;
-    const start = offsetToPosition(text, startOffset);
-    const end = new vscode.Position(start.line, start.character + className.length);
-    addLocation(classes, className, new vscode.Location(uri, new vscode.Range(start, end)));
+  for (const selector of selectors(text)) {
+    const classPattern = /\.([_a-zA-Z-][\w-]*)/g;
+    for (const match of selector.text.matchAll(classPattern)) {
+      const dotOffset = selector.start + (match.index ?? 0);
+      if (isEscaped(text, dotOffset)) {
+        continue;
+      }
+      const className = match[1];
+      const start = offsetToPosition(text, dotOffset + 1);
+      const end = new vscode.Position(start.line, start.character + className.length);
+      addLocation(classes, className, new vscode.Location(uri, new vscode.Range(start, end)));
+    }
   }
 
   return { uri, classes, imports };
+}
+
+function selectors(text: string): Array<{ text: string; start: number }> {
+  const result: Array<{ text: string; start: number }> = [];
+  let start = 0;
+
+  for (let index = 0; index < text.length; index++) {
+    const char = text[index];
+    if (char === '}') {
+      start = index + 1;
+      continue;
+    }
+    if (char === ';') {
+      start = index + 1;
+      continue;
+    }
+    if (char !== '{') {
+      continue;
+    }
+
+    const selector = text.slice(start, index);
+    const trimmedStart = selector.search(/\S/);
+    if (trimmedStart !== -1 && !selector.trimStart().startsWith('@')) {
+      result.push({ text: selector.slice(trimmedStart), start: start + trimmedStart });
+    }
+    start = index + 1;
+  }
+
+  return result;
+}
+
+function isEscaped(text: string, offset: number): boolean {
+  let slashCount = 0;
+  for (let index = offset - 1; index >= 0 && text[index] === '\\'; index--) {
+    slashCount++;
+  }
+  return slashCount % 2 === 1;
 }
 
 function offsetToPosition(text: string, offset: number): vscode.Position {

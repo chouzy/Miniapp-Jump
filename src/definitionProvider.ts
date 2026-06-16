@@ -168,7 +168,7 @@ export class MiniappDefinitionProvider implements vscode.DefinitionProvider {
 
     if (
       this.config('enableWxmlClassJump') &&
-      attr.name === 'class' &&
+      isClassAttribute(attr.name) &&
       isClassName(word) &&
       isStaticClassAtOffset(attr.value, offset - attr.valueStart)
     ) {
@@ -283,6 +283,10 @@ function isJsIdentifier(text: string): boolean {
 
 function isClassName(text: string): boolean {
   return /^[_a-zA-Z-][\w-]*$/.test(text);
+}
+
+function isClassAttribute(name: string): boolean {
+  return name === 'class' || name.endsWith('-class') || name.endsWith('Class');
 }
 
 function isStaticClassAtOffset(value: string, offset: number): boolean {

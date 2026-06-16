@@ -7,7 +7,7 @@ interface ReferenceTarget {
   uri: vscode.Uri;
   name: string;
   isBehaviorFile: boolean;
-  declaration?: vscode.Location;
+  declarations: vscode.Location[];
 }
 
 export class MiniappReferenceProvider implements vscode.ReferenceProvider {
@@ -16,8 +16,15 @@ export class MiniappReferenceProvider implements vscode.ReferenceProvider {
   async provideReferences(
     document: vscode.TextDocument,
     position: vscode.Position,
-    context: vscode.ReferenceContext,
+    _context: vscode.ReferenceContext,
     _token: vscode.CancellationToken
+  ): Promise<vscode.Location[] | undefined> {
+    return this.findReferences(document, position);
+  }
+
+  async findReferences(
+    document: vscode.TextDocument,
+    position: vscode.Position
   ): Promise<vscode.Location[] | undefined> {
     if (path.extname(document.uri.fsPath) !== '.js') {
       return undefined;
@@ -74,7 +81,9 @@ export class MiniappReferenceProvider implements vscode.ReferenceProvider {
       }
     }
 
-    return uniqueLocations(references);
+    return uniqueLocations(references).filter(
+      (reference) => !target.declarations.some((declaration) => sameLocation(reference, declaration))
+    );
   }
 
   private async resolveTarget(document: vscode.TextDocument, position: vscode.Position): Promise<ReferenceTarget | undefined> {
@@ -98,7 +107,7 @@ export class MiniappReferenceProvider implements vscode.ReferenceProvider {
       uri: document.uri,
       name,
       isBehaviorFile: js.isBehaviorFile,
-      declaration: declarations[0]
+      declarations
     };
   }
 
@@ -193,4 +202,12 @@ function uniqueLocations(locations: vscode.Location[]): vscode.Location[] {
     unique.push(location);
   }
   return unique;
+}
+
+function sameLocation(left: vscode.Location, right: vscode.Location): boolean {
+  return left.uri.toString() === right.uri.toString() &&
+    left.range.start.line === right.range.start.line &&
+    left.range.start.character === right.range.start.character &&
+    left.range.end.line === right.range.end.line &&
+    left.range.end.character === right.range.end.character;
 }

@@ -2,7 +2,7 @@
   "name": "miniapp-jump",
   "displayName": "Miniapp Jump",
   "description": "Go to definitions for WeChat Mini Program JS, WXML and WXSS files.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "local",
   "engines": {
     "vscode": "^1.90.0"
@@ -19,7 +19,8 @@
     "workspaceContains:**/*.wxml",
     "workspaceContains:**/*.wxss",
     "onCommand:miniappJump.rebuildIndex",
-    "onCommand:miniappJump.showDebugInfo"
+    "onCommand:miniappJump.showDebugInfo",
+    "onCommand:miniappJump.findReferences"
   ],
   "main": "./out/src/extension.js",
   "contributes": {
@@ -53,6 +54,27 @@
       {
         "command": "miniappJump.showDebugInfo",
         "title": "Miniapp Jump: Show Debug Info"
+      },
+      {
+        "command": "miniappJump.findReferences",
+        "title": "Miniapp Jump: Find References"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "miniappJump.findReferences",
+          "when": "resourceExtname == .js",
+          "group": "navigation@20"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "miniappJump.findReferences",
+        "key": "shift+f12",
+        "mac": "shift+f12",
+        "when": "editorTextFocus && resourceExtname == .js"
       }
     ],
     "configuration": {
