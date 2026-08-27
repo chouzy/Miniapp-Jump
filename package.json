@@ -2,8 +2,8 @@
   "name": "miniapp-jump",
   "displayName": "Miniapp Jump",
   "description": "Go to definitions for WeChat Mini Program JS, WXML and WXSS files.",
-  "version": "0.0.3",
-  "publisher": "local",
+  "version": "0.0.4",
+  "publisher": "chou",
   "engines": {
     "vscode": "^1.90.0"
   },

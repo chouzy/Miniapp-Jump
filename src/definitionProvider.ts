@@ -120,6 +120,20 @@ export class MiniappDefinitionProvider implements vscode.DefinitionProvider {
 
     const objectName = this.objectBeforeDot(document, wordRange.start);
     if (objectName && objectName !== 'this') {
+      const namedObjectImport = js.namedImports.get(objectName);
+      if (namedObjectImport) {
+        const definitions = await this.findModuleObjectMemberDefinitions(
+          document.uri,
+          namedObjectImport.source,
+          namedObjectImport.imported,
+          word
+        );
+        if (await this.builtinAlreadyProvides(document, wordRange.start, definitions)) {
+          return undefined;
+        }
+        return definitions.length > 0 ? definitions : undefined;
+      }
+
       const source = js.identifierModules.get(objectName);
       if (source) {
         const definitions = await this.findModuleDefinitions(document.uri, source, word);
@@ -207,6 +221,20 @@ export class MiniappDefinitionProvider implements vscode.DefinitionProvider {
       ...(imported.exports.get(exportName) ?? []),
       ...(imported.localMethods.get(exportName) ?? [])
     ];
+  }
+
+  private async findModuleObjectMemberDefinitions(
+    fromUri: vscode.Uri,
+    spec: string,
+    objectExportName: string,
+    memberName: string
+  ): Promise<vscode.Location[]> {
+    const uri = await this.index.resolveModule(fromUri, spec, '.js');
+    if (!uri) {
+      return [];
+    }
+    const imported = await this.index.getJs(uri);
+    return imported?.exportedObjectMembers.get(objectExportName)?.get(memberName) ?? [];
   }
 
   private hasPrefix(document: vscode.TextDocument, position: vscode.Position, pattern: RegExp): boolean {

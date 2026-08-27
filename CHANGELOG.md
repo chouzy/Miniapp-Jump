@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.0.4
+
+- 新增对 `observable({...})` 导出 Store 的方法跳转支持。
+- 支持识别 `action(async function...)` 等函数包装形式的 Store 方法。
+
 ## 0.0.3
 
 - 修复 `.wxml` 中 `custom-class`、`title-class`、`value-class`、`hover-class` 等样式属性无法跳转到 `.wxss` 的问题。

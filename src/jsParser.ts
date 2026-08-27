@@ -10,10 +10,35 @@ export interface JsFileIndex {
   uri: vscode.Uri;
   localMethods: Map<string, vscode.Location[]>;
   exports: Map<string, vscode.Location[]>;
+  exportedObjectMembers: Map<string, Map<string, vscode.Location[]>>;
   identifierModules: Map<string, string>;
   namedImports: Map<string, ImportedSymbol>;
   behaviorSpecs: string[];
   isBehaviorFile: boolean;
+}
+
+function functionValue(expression: ts.Expression): boolean {
+  if (ts.isFunctionExpression(expression) || ts.isArrowFunction(expression)) {
+    return true;
+  }
+
+  // MobX 的 action(...) 会返回传入的函数，Store 方法的定义仍应定位到属性名。
+  return ts.isCallExpression(expression) && expression.arguments.some(
+    (argument) => ts.isFunctionExpression(argument) || ts.isArrowFunction(argument)
+  );
+}
+
+function objectLiteralFromInitializer(initializer: ts.Expression): ts.ObjectLiteralExpression | undefined {
+  if (ts.isObjectLiteralExpression(initializer)) {
+    return initializer;
+  }
+
+  // 支持 observable({...}) 一类以对象字面量作为首个参数的 Store 工厂。
+  if (ts.isCallExpression(initializer) && ts.isObjectLiteralExpression(initializer.arguments[0])) {
+    return initializer.arguments[0];
+  }
+
+  return undefined;
 }
 
 function addLocation(target: Map<string, vscode.Location[]>, name: string | undefined, location: vscode.Location): void {
@@ -60,7 +85,7 @@ function collectFunctionProperties(
 
     if (
       ts.isPropertyAssignment(property) &&
-      (ts.isFunctionExpression(property.initializer) || ts.isArrowFunction(property.initializer))
+      functionValue(property.initializer)
     ) {
       addLocation(target, nameText(property.name), locationForNode(sourceFile, uri, property.name));
     }
@@ -98,7 +123,7 @@ function collectObjectExportProperties(
       continue;
     }
 
-    if (ts.isFunctionExpression(property.initializer) || ts.isArrowFunction(property.initializer)) {
+    if (functionValue(property.initializer)) {
       addLocation(target, exportedName, locationForNode(sourceFile, uri, property.name));
       continue;
     }
@@ -212,6 +237,7 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
   const sourceFile = ts.createSourceFile(uri.fsPath, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const localMethods = new Map<string, vscode.Location[]>();
   const exportsMap = new Map<string, vscode.Location[]>();
+  const exportedObjectMembers = new Map<string, Map<string, vscode.Location[]>>();
   const identifierModules = new Map<string, string>();
   const namedImports = new Map<string, ImportedSymbol>();
   const localDeclarations = new Map<string, vscode.Location>();
@@ -289,6 +315,15 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
           (ts.isFunctionExpression(declaration.initializer) || ts.isArrowFunction(declaration.initializer))
         ) {
           addLocation(exportsMap, declaration.name.text, locationForNode(sourceFile, uri, declaration.name));
+        }
+
+        if (ts.isIdentifier(declaration.name) && declaration.initializer) {
+          const objectLiteral = objectLiteralFromInitializer(declaration.initializer);
+          if (objectLiteral) {
+            const members = new Map<string, vscode.Location[]>();
+            collectFunctionProperties(sourceFile, uri, objectLiteral, members);
+            exportedObjectMembers.set(declaration.name.text, members);
+          }
         }
       }
     }
@@ -370,6 +405,7 @@ export function parseJsFile(text: string, uri: vscode.Uri): JsFileIndex {
     uri,
     localMethods,
     exports: exportsMap,
+    exportedObjectMembers,
     identifierModules,
     namedImports,
     behaviorSpecs,
